@@ -7,7 +7,7 @@ import subprocess
 
 def check_output(command, text):
     try:
-        output = subprocess.check_output(command, shell=True).decode()
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
         if text in output:
             return True
         else:
@@ -15,7 +15,7 @@ def check_output(command, text):
     except subprocess.CalledProcessError:
         return False
 
-command = "rm --help"
-text = "force"
+command = "ls" #пример команды
+text = "file.txt" #пример текст
 result = check_output(command, text)
 print(result)
