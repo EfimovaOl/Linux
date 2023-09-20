@@ -1,4 +1,5 @@
 import subprocess
+import paramiko
 
 def checkout(cmd, text):
     result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, encoding='utf-8')
@@ -18,3 +19,58 @@ def checkout_negativ(cmd, text):
 def check_hash_crc32(cmd):
     result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, encoding='utf-8')
     return result.stdout
+
+
+def ssh_checkout(host, user, passw, cmd, text, port=22, negative=False):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(hostname=host, username=user, password=passw, port=port, allow_agent=False, look_for_keys=False)
+    stdin, stdout, stderr = client.exec_command(cmd)
+    exit_code = stdout.channel.recv_exit_status()
+    out = (stdout.read() + stderr.read()).decode('utf-8')
+    client.close()
+    if not negative:
+        if text in out and exit_code == 0:
+            return True
+        else:
+            return False
+    else:
+        if text in out and exit_code != 0:
+            return True
+        else:
+            return False
+
+
+def ssh_check_hash(host, user, passw, cmd, port=22):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(hostname=host, username=user, password=passw, port=port, allow_agent=False, look_for_keys=False)
+    stdin, stdout, stderr = client.exec_command(cmd)
+    exit_code = stdout.channel.recv_exit_status()
+    out = (stdout.read()).decode('utf-8')
+    client.close()
+    if exit_code == 0:
+        return out
+    else:
+        return None
+
+
+def upload_files(host, user, password, local_path, remote_path, port=22):
+    print(f"загружаем...")
+    transport = paramiko.Transport((host, port))
+    transport.connect(None, username=user, password=password)
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    sftp.put(local_path, remote_path)
+    if sftp:
+        sftp.close()
+    if transport:
+        transport.close()
+
+
+def check_loadavg(cmd):
+    result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, encoding='utf-8')
+    return result.stdout
+
+
+if __name__ == "__main__":
+    pass
